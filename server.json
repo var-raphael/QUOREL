@@ -1,0 +1,26 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.var-raphael/quorel",
+  "title": "Quorel",
+  "description": "Quorel turns any public website into a clean, versioned, queryable API. Query, filter, and clean structured web datasets conversationally via MCP.",
+  "websiteUrl": "https://quorel.vercel.app",
+  "repository": {
+    "url": "https://github.com/var-raphael/QUOREL",
+    "source": "github"
+  },
+  "version": "1.0.0",
+  "remotes": [
+    {
+      "type": "sse",
+      "url": "https://quorel.onrender.com/mcp/sse",
+      "headers": [
+        {
+          "name": "Authorization",
+          "description": "Bearer token generated from your Quorel account (Settings → MCP Token). Format: Bearer YOUR_TOKEN",
+          "isRequired": true,
+          "isSecret": true
+        }
+      ]
+    }
+  ]
+}

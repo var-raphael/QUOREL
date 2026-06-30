@@ -1,183 +1,159 @@
-# Quorel
+# MCP Registry
 
-**The source of truth for the live web.**
+The MCP registry provides MCP clients with a list of MCP servers, like an app store for MCP servers.
 
-Quorel turns any public website into a clean, versioned, API-ready dataset — without you writing a single scraper. Define what data you want once, and Quorel fetches it, structures it against your schema, and keeps it current every night. No pipelines. No maintenance. No dirty surprises.
+📖 **[Full documentation](./docs)**
 
----
+## Development Status
 
-## What it is
+> [!WARNING]  
+> The registry is under [active development](#development-status). The registry API spec is unstable and the official MCP registry database may be wiped at any time.
 
-Most scraping gets you a snapshot. Quorel gives you a **source of truth** — structured, versioned, and live. Every refresh is a permanent snapshot. Nothing is ever overwritten. Roll back to any prior version instantly, diff any two versions side by side, and consume your data from a clean API in any format you need.
+**2025-09-04 update**: We're targeting a 'preview' go-live on 8th September. This may still be unstable and not provide durability guarantees, but is a step towards being more solidified. A general availability (GA) release will follow later.
 
----
+Current key maintainers:
+- **Adam Jones** (Anthropic) [@domdomegg](https://github.com/domdomegg)  
+- **Tadas Antanavicius** (PulseMCP) [@tadasant](https://github.com/tadasant)
+- **Toby Padilla** (GitHub) [@toby](https://github.com/toby)
 
-## Get started in 5 minutes
+## Contributing
 
-1. Go to [quorel.vercel.app](https://quorel.vercel.app) and create a free account
-2. Paste your URLs or describe your intent in plain English
-3. Define your schema — tell Quorel which fields you want and what they mean
-4. Hit **Create** — your dataset is live and refreshing nightly from that moment
+We use multiple channels for collaboration - see [modelcontextprotocol.io/community/communication](https://modelcontextprotocol.io/community/communication).
 
-No config files. No infrastructure. No maintenance.
+Often (but not always) ideas flow through this pipeline:
 
----
+- **[Discord](https://modelcontextprotocol.io/community/communication)** - Real-time community discussions
+- **[Discussions](https://github.com/modelcontextprotocol/registry/discussions)** - Propose and discuss product/technical requirements
+- **[Issues](https://github.com/modelcontextprotocol/registry/issues)** - Track well-scoped technical work  
+- **[Pull Requests](https://github.com/modelcontextprotocol/registry/pulls)** - Contribute work towards issues
 
-## Core concepts
+### Quick start:
 
-### Datasets
+#### Pre-requisites
 
-A dataset is a named collection of structured entities extracted from one or more public URLs. Every dataset has a schema, a version history, and a public or private API endpoint.
+- **Docker**
+- **Go 1.24.x** 
+- **golangci-lint v2.4.0**
 
-### Schema
+#### Running the server
 
-You define your schema in plain English — field names and what they mean. Quorel's AI extraction engine maps web content to your structure precisely on every refresh. No CSS selectors. No XPath. No brittle rules that break when the page changes.
-
-### Versions
-
-Every refresh that produces a meaningful change creates a new immutable version. Nothing is ever overwritten. Your full history is always queryable, diffable, and downloadable.
-
-### Nightly refresh
-
-Your sources are re-processed automatically every night. Your dataset is always current by morning. You can also trigger additional refreshes on demand via your ping URL.
-
----
-
-## API
-
-Public datasets are accessible to anyone — no account needed.
-
-```
-GET https://quorel.vercel.app/api/{dataset_id}
+```bash
+# Start full development environment
+make dev-compose
 ```
 
-**Query params**
+This starts the registry at [`localhost:8080`](http://localhost:8080) with PostgreSQL and seed data. It can be configured with environment variables in [docker-compose.yml](./docker-compose.yml) - see [.env.example](./.env.example) for a reference.
 
-| Param    | Description                                              |
-| -------- | ---------------------------------------------------------|
-| `format` | `json`, `csv`, `jsonl`, `xml`, `xlsx`, `tsv`, `parquet`  |
-| `limit`  | Number of entities to return (max 500)                   |
-| `page`   | Page number for pagination                                |
-| `sort`   | Field and direction e.g. `score:desc`                     |
+<details>
+<summary>Alternative: Local setup without Docker</summary>
 
-**Private datasets** — pass your private key in the Authorization header:
+**Prerequisites:**
+- PostgreSQL running locally
+- Go 1.24.x installed
 
-```
-Authorization: Bearer YOUR_PRIVATE_KEY
-```
-
----
-
-## On-demand refresh — Ping URL
-
-Every dataset gets a dedicated ping URL. Hit it from any external scheduler, CI pipeline, or automation tool to trigger an additional refresh outside the nightly cycle.
-
-```
-GET https://quorel.vercel.app/ping/{your-ping-key}
+```bash
+# Build and run locally
+make build
+make dev-local
 ```
 
-Available on Pro and above.
+The service runs on [`localhost:8080`](http://localhost:8080) by default. This can be configured with environment variables in `.env` - see [.env.example](./.env.example) for a reference.
 
----
+</details>
 
-## Webhooks
+<details>
+<summary>Alternative: Running a pre-built Docker image</summary>
 
-Register a webhook endpoint and Quorel will POST to it the moment your dataset finishes refreshing. Build reactive pipelines without polling.
+Pre-built Docker images are automatically published to GitHub Container Registry:
 
-```json
-{
-  "dataset_id": 142,
-  "name": "remote-jobs",
-  "version": 67,
-  "entity_count": 1204,
-  "fired_at": "2026-06-20T03:00:00Z"
-}
+```bash
+# Run latest stable release
+docker run -p 8080:8080 ghcr.io/modelcontextprotocol/registry:latest
+
+# Run latest from main branch (continuous deployment)
+docker run -p 8080:8080 ghcr.io/modelcontextprotocol/registry:main
+
+# Run specific release version
+docker run -p 8080:8080 ghcr.io/modelcontextprotocol/registry:v1.0.0
+
+# Run development build from main branch
+docker run -p 8080:8080 ghcr.io/modelcontextprotocol/registry:main-20250906-abc123d
 ```
 
-Available on Pro and above.
+**Available tags:** 
+- **Releases**: `latest`, `v1.0.0`, `v1.1.0`, etc.
+- **Continuous**: `main` (latest main branch build)
+- **Development**: `main-<date>-<sha>` (specific commit builds)
 
----
+</details>
 
-## Version history & diff
+#### Publishing a server
 
-Every version is permanent. From your dataset dashboard you can:
+To publish a server, we've built a simple CLI. You can use it with:
 
-- **Diff** any two versions side by side — added rows, removed entries, modified field values
-- **Rollback** to any prior version in one click
-- **Freeze** a version to lock it permanently as your stable source
+```bash
+# Build the latest CLI
+make publisher
 
----
-
-## The Marketplace
-
-Browse hundreds of public datasets across tech, finance, jobs, AI, and research — already built, maintained, and refreshed nightly.
-
-→ [quorel.vercel.app/datasets](https://quorel.vercel.app/datasets)
-
-**Clone any public dataset** and make it yours — add your own URLs, adjust the schema, and publish it back. You own it fully from day one.
-
----
-
-## MCP — AI Agent access
-
-Every Quorel dataset ships with a native MCP server, included on every plan. Connect Claude or any MCP-compatible agent and let it browse, query, and edit your data conversationally — no scripts required.
-
-**Available MCP tools**
-
-| Tool                  | What it does                                                              |
-| ---------------------- | -------------------------------------------------------------------------|
-| `list_datasets`        | List all datasets owned by the authenticated user                        |
-| `get_dataset_schema`   | Inspect a dataset's fields, versions, and metadata                       |
-| `query_dataset`        | Filter, sort, dedupe, and paginate entities; export in any format        |
-| `get_entity`           | Fetch a single entity by its index                                       |
-| `pull_for_edit`        | Pull the full entity list for agent-driven cleanup                       |
-| `update_entity`        | Patch a single entity's fields in the alt version                        |
-| `delete_entity`        | Remove one or more entities from the alt version                        |
-| `push_alt_version`     | Publish a cleaned/processed batch as the alt version                     |
-| `append_alt_version`   | Append a processed batch to an existing alt version                      |
-
-**Example**
-
-```
-query_dataset(dataset_id: 142, keywords: "senior remote", sort: "salary:desc", limit: 5)
-→ 47 entities matched, returned as JSON sorted by salary
-
-pull_for_edit(dataset_id: 142, use_alt: false)
-→ Claude reviews 1,204 entities, dedupes and fixes null fields
-
-push_alt_version(dataset_id: 142, version: 3, entities: [...])
-→ live at /remote-jobs/v3/alt
+# Use it!
+./bin/mcp-publisher --help
 ```
 
-MCP access is included on every plan, including Free.
+See [the publisher guide](./docs/guides/publishing/publish-server.md) for more details.
 
----
+#### Other commands
 
-## Plans
+```bash
+# Run lint, unit tests and integration tests
+make check
+```
 
-|                  | Free | Pro    | Scale       |
-| ---------------- | ---- | ------ | ----------- |
-| Datasets         | 1    | 5      | Unlimited   |
-| URLs per dataset | 20   | 100    | 500         |
-| Nightly refresh  | ✓    | ✓      | ✓           |
-| Ping URL         | —    | ✓      | ✓           |
-| Webhooks         | —    | ✓      | ✓           |
-| MCP access       | ✓    | ✓      | ✓           |
-| Price            | $0   | $19/mo | Coming soon |
+There are also a few more helpful commands for development. Run `make help` to learn more, or look in [Makefile](./Makefile).
 
-Full plan details at [quorel.vercel.app](https://quorel.vercel.app#pricing)
+<!--
+For Claude and other AI tools: Always prefer make targets over custom commands where possible.
+-->
 
----
+## Architecture
 
-## Links
+### Project Structure
 
-- **Product** — [quorel.vercel.app](https://quorel.vercel.app)
-- **Marketplace** — [quorel.vercel.app/datasets](https://quorel.vercel.app/datasets)
-- **Docs** — [quorel.vercel.app/docs](https://quorel.vercel.app/docs)
-- **X / Twitter** — [@PhantomDev001](https://x.com/PhantomDev001)
-- **GitHub** — [var-raphael](https://github.com/var-raphael)
+```
+├── cmd/                     # Application entry points
+│   └── publisher/           # Server publishing tool
+├── data/                    # Seed data
+├── deploy/                  # Deployment configuration (Pulumi)
+├── docs/                    # Documentation
+├── internal/                # Private application code
+│   ├── api/                 # HTTP handlers and routing
+│   ├── auth/                # Authentication (GitHub OAuth, JWT, namespace blocking)
+│   ├── config/              # Configuration management
+│   ├── database/            # Data persistence (PostgreSQL, in-memory)
+│   ├── service/             # Business logic
+│   ├── telemetry/           # Metrics and monitoring
+│   └── validators/          # Input validation
+├── pkg/                     # Public packages
+│   ├── api/                 # API types and structures
+│   │   └── v0/              # Version 0 API types
+│   └── model/               # Data models for server.json
+├── scripts/                 # Development and testing scripts
+├── tests/                   # Integration tests
+└── tools/                   # CLI tools and utilities
+    └── validate-*.sh        # Schema validation tools
+```
 
----
+### Authentication
 
-*Public beta · No credit card required · Upgrade anytime*
+Publishing supports multiple authentication methods:
+- **GitHub OAuth** - For publishing by logging into GitHub
+- **GitHub OIDC** - For publishing from GitHub Actions
+- **DNS verification** - For proving ownership of a domain and its subdomains
+- **HTTP verification** - For proving ownership of a domain
 
+The registry validates namespace ownership when publishing. E.g. to publish...:
+- `io.github.domdomegg/my-cool-mcp` you must login to GitHub as `domdomegg`, or be in a GitHub Action on domdomegg's repos
+- `me.adamjones/my-cool-mcp` you must prove ownership of `adamjones.me` via DNS or HTTP challenge
+
+## More documentation
+
+See the [documentation](./docs) for more details if your question has not been answered here!
