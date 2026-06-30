@@ -26,15 +26,19 @@ No config files. No infrastructure. No maintenance.
 ## Core concepts
 
 ### Datasets
+
 A dataset is a named collection of structured entities extracted from one or more public URLs. Every dataset has a schema, a version history, and a public or private API endpoint.
 
 ### Schema
+
 You define your schema in plain English — field names and what they mean. Quorel's AI extraction engine maps web content to your structure precisely on every refresh. No CSS selectors. No XPath. No brittle rules that break when the page changes.
 
 ### Versions
+
 Every refresh that produces a meaningful change creates a new immutable version. Nothing is ever overwritten. Your full history is always queryable, diffable, and downloadable.
 
 ### Nightly refresh
+
 Your sources are re-processed automatically every night. Your dataset is always current by morning. You can also trigger additional refreshes on demand via your ping URL.
 
 ---
@@ -49,12 +53,12 @@ GET https://quorel.vercel.app/api/{dataset_id}
 
 **Query params**
 
-| Param | Description |
-|---|---|
-| `format` | `json`, `csv`, `jsonl`, `xml`, `xlsx`, `tsv`, `parquet` |
-| `limit` | Number of entities to return (max 500) |
-| `page` | Page number for pagination |
-| `sort` | Field and direction e.g. `score:desc` |
+| Param    | Description                                              |
+| -------- | ---------------------------------------------------------|
+| `format` | `json`, `csv`, `jsonl`, `xml`, `xlsx`, `tsv`, `parquet`  |
+| `limit`  | Number of entities to return (max 500)                   |
+| `page`   | Page number for pagination                                |
+| `sort`   | Field and direction e.g. `score:desc`                     |
 
 **Private datasets** — pass your private key in the Authorization header:
 
@@ -116,31 +120,50 @@ Browse hundreds of public datasets across tech, finance, jobs, AI, and research 
 
 ## MCP — AI Agent access
 
-Every Quorel dataset ships with a native MCP server, included on every plan. Connect Claude or any MCP-compatible agent and let it query, filter, and clean your data conversationally.
+Every Quorel dataset ships with a native MCP server, included on every plan. Connect Claude or any MCP-compatible agent and let it browse, query, and edit your data conversationally — no scripts required.
 
 **Available MCP tools**
 
-| Tool | What it does |
-|---|---|
-| `list_datasets` | Browse your datasets |
-| `get_dataset_schema` | Inspect field definitions |
-| `query_dataset` | Filter, sort, and paginate entities |
-| `pull_for_edit` | Pull entities for agent-driven cleanup |
-| `push_alt_version` | Publish a cleaned alt version |
+| Tool                  | What it does                                                              |
+| ---------------------- | -------------------------------------------------------------------------|
+| `list_datasets`        | List all datasets owned by the authenticated user                        |
+| `get_dataset_schema`   | Inspect a dataset's fields, versions, and metadata                       |
+| `query_dataset`        | Filter, sort, dedupe, and paginate entities; export in any format        |
+| `get_entity`           | Fetch a single entity by its index                                       |
+| `pull_for_edit`        | Pull the full entity list for agent-driven cleanup                       |
+| `update_entity`        | Patch a single entity's fields in the alt version                        |
+| `delete_entity`        | Remove one or more entities from the alt version                        |
+| `push_alt_version`     | Publish a cleaned/processed batch as the alt version                     |
+| `append_alt_version`   | Append a processed batch to an existing alt version                      |
+
+**Example**
+
+```
+query_dataset(dataset_id: 142, keywords: "senior remote", sort: "salary:desc", limit: 5)
+→ 47 entities matched, returned as JSON sorted by salary
+
+pull_for_edit(dataset_id: 142, use_alt: false)
+→ Claude reviews 1,204 entities, dedupes and fixes null fields
+
+push_alt_version(dataset_id: 142, version: 3, entities: [...])
+→ live at /remote-jobs/v3/alt
+```
+
+MCP access is included on every plan, including Free.
 
 ---
 
 ## Plans
 
-| | Free | Pro | Scale |
-|---|---|---|---|
-| Datasets | 1 | 5 | Unlimited |
-| URLs per dataset | 20 | 100 | 500 |
-| Nightly refresh | ✓ | ✓ | ✓ |
-| Ping URL | — | ✓ | ✓ |
-| Webhooks | — | ✓ | ✓ |
-| MCP access | ✓ | ✓ | ✓ |
-| Price | $0 | $19/mo | Coming soon |
+|                  | Free | Pro    | Scale       |
+| ---------------- | ---- | ------ | ----------- |
+| Datasets         | 1    | 5      | Unlimited   |
+| URLs per dataset | 20   | 100    | 500         |
+| Nightly refresh  | ✓    | ✓      | ✓           |
+| Ping URL         | —    | ✓      | ✓           |
+| Webhooks         | —    | ✓      | ✓           |
+| MCP access       | ✓    | ✓      | ✓           |
+| Price            | $0   | $19/mo | Coming soon |
 
 Full plan details at [quorel.vercel.app](https://quorel.vercel.app#pricing)
 
@@ -157,3 +180,4 @@ Full plan details at [quorel.vercel.app](https://quorel.vercel.app#pricing)
 ---
 
 *Public beta · No credit card required · Upgrade anytime*
+
